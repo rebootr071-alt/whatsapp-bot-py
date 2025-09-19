@@ -54,11 +54,26 @@ async def webhook(request: Request):
     return PlainTextResponse("EVENT_RECEIVED")
 
 async def send_text(to: str, body: str):
+    # Прерываем, если не задан токен или ID номера
     if not (WHATSAPP_TOKEN and PHONE_NUMBER_ID):
         return
+
     url = f"{GRAPH_URL}/{PHONE_NUMBER_ID}/messages"
-    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
-    data = {"messaging_product": "whatsapp", "to": to, "text": {"body": body}}
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "text": {"body": body}
+    }
+
     async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(url, headers=headers, json=data)
-        r.raise_for_status()
+        try:
+            r = await client.post(url, headers=headers, json=data)
+            r.raise_for_status()  # Поднимает исключение при 4xx/5xx
+        except Exception:
+            # Здесь можно добавить логирование, если нужно
+            pass
+
